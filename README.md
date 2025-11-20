@@ -206,14 +206,14 @@ print(f"Fallos de página: {paging.page_faults}")
 
 ## Criterios de Evaluación Cumplidos (Excelente)
 
-✅ **Implementación Completa:** Todos los módulos funcionales y bien estructurados  
-✅ **Código Limpio:** PEP 8, documentación exhaustiva, type hints  
-✅ **Algoritmos Múltiples:** Comparación entre diferentes enfoques  
-✅ **Sincronización Correcta:** Sin race conditions ni deadlocks  
-✅ **Pruebas Exhaustivas:** Cobertura > 80%, casos de borde  
-✅ **Visualización:** Gráficos y estadísticas claras  
-✅ **Documentación:** README completo, comentarios en código  
-✅ **Ejemplos Prácticos:** Demos funcionales de cada módulo  
+**Implementación Completa:** Todos los módulos funcionales y bien estructurados  
+**Código Limpio:** PEP 8, documentación exhaustiva, type hints  
+**Algoritmos Múltiples:** Comparación entre diferentes enfoques  
+**Sincronización Correcta:** Sin race conditions ni deadlocks  
+**Pruebas Exhaustivas:** Cobertura > 80%, casos de borde  
+**Visualización:** Gráficos y estadísticas claras  
+**Documentación:** README completo, comentarios en código  
+**Ejemplos Prácticos:** Demos funcionales de cada módulo  
 
 ## Tecnologías Utilizadas
 
@@ -240,11 +240,3 @@ Ver la carpeta `results/` para gráficos y estadísticas detalladas.
 2. Tanenbaum, A. S., & Bos, H. (2014). *Modern Operating Systems* (4th ed.)
 3. Stallings, W. (2018). *Operating Systems: Internals and Design Principles* (9th ed.)
 
-## Licencia
-
-Este proyecto es material académico para el curso de Sistemas Operativos 2025-2.
-
-## Contacto
-
-- Camilo Niño: [email]
-- Nicolás Rojas: [email]
