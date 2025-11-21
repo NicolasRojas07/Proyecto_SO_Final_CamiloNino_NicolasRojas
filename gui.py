@@ -11,10 +11,11 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QComboBox, QLabel, QSpinBox, QDoubleSpinBox,
     QTableWidget, QTableWidgetItem, QTextEdit, QTabWidget,
-    QGroupBox, QFormLayout, QMessageBox, QProgressBar, QSlider
+    QGroupBox, QFormLayout, QMessageBox, QProgressBar, QSlider,
+    QGraphicsDropShadowEffect
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QFont, QColor, QTextCursor
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QPropertyAnimation, QEasingCurve, QTimer
+from PyQt5.QtGui import QFont, QColor, QTextCursor, QPalette, QLinearGradient, QBrush
 from PyQt5.QtChart import QChart, QChartView, QBarSeries, QBarSet, QBarCategoryAxis, QValueAxis
 from PyQt5.QtCore import QDate
 
@@ -74,15 +75,36 @@ class SchedulerTab(QWidget):
         config_group.setLayout(config_layout)
         layout.addWidget(config_group)
         
-        # Botones
+        # Botones con iconos y efectos
         button_layout = QHBoxLayout()
         
         run_button = QPushButton("▶ Ejecutar Algoritmo")
         run_button.clicked.connect(self.run_scheduler)
+        self.add_button_shadow(run_button)
         button_layout.addWidget(run_button)
         
         compare_button = QPushButton("📊 Comparar Todos")
         compare_button.clicked.connect(self.compare_algorithms)
+        compare_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(251, 188, 5, 0.85), stop:1 rgba(234, 67, 53, 0.85));
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.6);
+                border-radius: 14px;
+                padding: 14px 28px;
+                font-weight: 600;
+                font-size: 14px;
+                min-height: 25px;
+                min-width: 160px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(251, 188, 5, 1), stop:1 rgba(234, 67, 53, 1));
+                border: 1px solid rgba(255, 255, 255, 0.8);
+            }
+        """)
+        self.add_button_shadow(compare_button)
         button_layout.addWidget(compare_button)
         
         layout.addLayout(button_layout)
@@ -103,6 +125,14 @@ class SchedulerTab(QWidget):
         layout.addWidget(self.output_text)
         
         self.setLayout(layout)
+    
+    def add_button_shadow(self, button):
+        """Agrega efecto de sombra estilo Glass"""
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(20)
+        shadow.setColor(QColor(66, 133, 244, 60))
+        shadow.setOffset(0, 6)
+        button.setGraphicsEffect(shadow)
     
     def get_sample_processes(self):
         """Retorna procesos de ejemplo"""
@@ -202,14 +232,16 @@ class SchedulerTab(QWidget):
                 waiting_item = QTableWidgetItem(str(process.waiting_time))
                 turnaround_item = QTableWidgetItem(str(process.turnaround_time))
                 
-                # Colorear según el tiempo de espera
+                # Colorear según el tiempo de espera con gradiente
                 waiting_time = process.waiting_time
                 if waiting_time == 0:
-                    color = QColor(144, 238, 144)  # Verde claro (sin espera)
+                    color = QColor(76, 217, 100)  # Verde vibrante
                 elif waiting_time < 5:
-                    color = QColor(255, 255, 153)  # Amarillo (espera baja)
+                    color = QColor(255, 204, 0)  # Amarillo dorado
+                elif waiting_time < 10:
+                    color = QColor(255, 149, 0)  # Naranja
                 else:
-                    color = QColor(255, 200, 200)  # Rojo claro (espera alta)
+                    color = QColor(255, 59, 48)  # Rojo vibrante
                 
                 waiting_item.setBackground(color)
                 turnaround_item.setBackground(color)
@@ -297,9 +329,10 @@ class SynchronizationTab(QWidget):
         config_group.setLayout(config_layout)
         layout.addWidget(config_group)
         
-        # Botón
+        # Botón con animación
         run_button = QPushButton("▶ Ejecutar Simulación")
         run_button.clicked.connect(self.run_synchronization)
+        self.add_button_shadow(run_button)
         layout.addWidget(run_button)
         
         # Salida de texto
@@ -310,6 +343,14 @@ class SynchronizationTab(QWidget):
         
         self.setLayout(layout)
         self.update_config_options()
+    
+    def add_button_shadow(self, button):
+        """Agrega efecto de sombra estilo Glass"""
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(20)
+        shadow.setColor(QColor(66, 133, 244, 60))
+        shadow.setOffset(0, 6)
+        button.setGraphicsEffect(shadow)
     
     def update_config_options(self):
         """Actualiza opciones según el tipo seleccionado"""
@@ -404,8 +445,24 @@ class SynchronizationTab(QWidget):
             self.output_text.setText(output)
             QMessageBox.information(self, "Éxito", "✅ Simulación completada exitosamente")
             
+            # Animar la actualización del mensaje
+            self.animate_success_message()
+            
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error: {str(e)}")
+    
+    def animate_success_message(self):
+        """Animación de mensaje de éxito"""
+        original_style = self.output_text.styleSheet()
+        
+        def flash():
+            self.output_text.setStyleSheet(original_style + """
+                border: 2px solid rgba(76, 217, 100, 0.8);
+                background: rgba(76, 217, 100, 0.1);
+            """)
+            QTimer.singleShot(200, lambda: self.output_text.setStyleSheet(original_style))
+        
+        flash()
 
 
 class DemoTab(QWidget):
@@ -418,9 +475,58 @@ class DemoTab(QWidget):
     def init_ui(self):
         layout = QVBoxLayout()
         
+        # Título con estilo Glass
+        title_label = QLabel("🎬 Demostración Completa del Sistema")
+        title_label.setStyleSheet("""
+            QLabel {
+                font-size: 26px;
+                font-weight: 600;
+                color: #424242;
+                padding: 24px;
+                background: rgba(255, 255, 255, 0.7);
+                border: 1px solid rgba(255, 255, 255, 0.9);
+                border-radius: 16px;
+            }
+        """)
+        title_label.setAlignment(Qt.AlignCenter)
+        
+        # Sombra para el título
+        title_shadow = QGraphicsDropShadowEffect()
+        title_shadow.setBlurRadius(20)
+        title_shadow.setColor(QColor(0, 0, 0, 30))
+        title_shadow.setOffset(0, 4)
+        title_label.setGraphicsEffect(title_shadow)
+        
+        layout.addWidget(title_label)
+        
         demo_button = QPushButton("▶ Ejecutar Demo Completo")
-        demo_button.setStyleSheet("background-color: #4CAF50; color: white; font-size: 14px; padding: 10px;")
+        demo_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(66, 133, 244, 0.85), stop:1 rgba(52, 168, 83, 0.85));
+                color: white;
+                font-size: 16px;
+                padding: 16px 32px;
+                border-radius: 14px;
+                font-weight: 600;
+                min-width: 200px;
+                border: 1px solid rgba(255, 255, 255, 0.6);
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(66, 133, 244, 1), stop:1 rgba(52, 168, 83, 1));
+                border: 1px solid rgba(255, 255, 255, 0.8);
+            }
+        """)
         demo_button.clicked.connect(self.run_complete_demo)
+        
+        # Agregar sombra al botón estilo Glass
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(25)
+        shadow.setColor(QColor(66, 133, 244, 80))
+        shadow.setOffset(0, 8)
+        demo_button.setGraphicsEffect(shadow)
+        
         layout.addWidget(demo_button)
         
         self.output_text = QTextEdit()
@@ -514,23 +620,212 @@ class MainWindow(QMainWindow):
     
     def init_ui(self):
         self.setWindowTitle("🖥️  Simulador de Sistemas Operativos")
-        self.setGeometry(100, 100, 1200, 800)
+        self.setGeometry(100, 100, 1400, 900)
         
-        # Tema oscuro
+        # Estilo moderno Glass Morphism (estilo Apple)
         self.setStyleSheet("""
-            QMainWindow { background-color: #f0f0f0; }
-            QTabWidget { background-color: white; }
-            QPushButton {
-                background-color: #2196F3;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                padding: 8px 16px;
-                font-weight: bold;
+            QMainWindow {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #e3f2fd, stop:0.5 #f5f5f5, stop:1 #fce4ec);
             }
-            QPushButton:hover { background-color: #0b7dda; }
-            QGroupBox { border: 2px solid #ddd; border-radius: 4px; padding: 10px; }
-            QTableWidget { border: 1px solid #ddd; }
+            
+            QTabWidget::pane {
+                border: none;
+                background: rgba(255, 255, 255, 0.7);
+                border-radius: 20px;
+            }
+            
+            QTabBar::tab {
+                background: rgba(255, 255, 255, 0.6);
+                color: #424242;
+                padding: 14px 30px;
+                margin: 3px;
+                border-radius: 12px;
+                font-weight: 600;
+                font-size: 13px;
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                min-width: 120px;
+            }
+            
+            QTabBar::tab:selected {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(66, 133, 244, 0.9), stop:1 rgba(52, 168, 83, 0.9));
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.9);
+            }
+            
+            QTabBar::tab:hover:!selected {
+                background: rgba(255, 255, 255, 0.8);
+                border: 1px solid rgba(66, 133, 244, 0.3);
+            }
+            
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(66, 133, 244, 0.85), stop:1 rgba(52, 168, 83, 0.85));
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.6);
+                border-radius: 14px;
+                padding: 14px 28px;
+                font-weight: 600;
+                font-size: 14px;
+                min-height: 25px;
+                min-width: 160px;
+            }
+            
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(66, 133, 244, 1), stop:1 rgba(52, 168, 83, 1));
+                border: 1px solid rgba(255, 255, 255, 0.8);
+            }
+            
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(52, 103, 214, 0.9), stop:1 rgba(42, 148, 73, 0.9));
+                padding: 15px 27px 13px 29px;
+            }
+            
+            QGroupBox {
+                background: rgba(255, 255, 255, 0.6);
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 16px;
+                padding: 25px;
+                margin-top: 18px;
+                font-weight: 600;
+                color: #424242;
+            }
+            
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top left;
+                padding: 8px 18px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(66, 133, 244, 0.9), stop:1 rgba(52, 168, 83, 0.9));
+                color: white;
+                border-radius: 10px;
+                left: 18px;
+                font-size: 13px;
+            }
+            
+            QTableWidget {
+                background: rgba(255, 255, 255, 0.7);
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 12px;
+                gridline-color: rgba(66, 133, 244, 0.15);
+                selection-background-color: rgba(66, 133, 244, 0.3);
+                alternate-background-color: rgba(245, 245, 245, 0.5);
+            }
+            
+            QTableWidget::item {
+                padding: 10px;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+                color: #424242;
+            }
+            
+            QTableWidget::item:selected {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(66, 133, 244, 0.4), stop:1 rgba(52, 168, 83, 0.4));
+                color: #1a1a1a;
+            }
+            
+            QHeaderView::section {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(66, 133, 244, 0.85), stop:1 rgba(52, 168, 83, 0.85));
+                color: white;
+                padding: 12px;
+                border: none;
+                font-weight: 600;
+                font-size: 13px;
+            }
+            
+            QTextEdit, QPlainTextEdit {
+                background: rgba(255, 255, 255, 0.75);
+                color: #2c3e50;
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 12px;
+                padding: 14px;
+                font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+                font-size: 12px;
+                selection-background-color: rgba(66, 133, 244, 0.3);
+            }
+            
+            QComboBox {
+                background: rgba(255, 255, 255, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.9);
+                border-radius: 10px;
+                padding: 10px 14px;
+                min-width: 180px;
+                font-size: 13px;
+                color: #424242;
+            }
+            
+            QComboBox:hover {
+                border: 1px solid rgba(66, 133, 244, 0.5);
+                background: rgba(255, 255, 255, 0.9);
+            }
+            
+            QComboBox::drop-down {
+                border: none;
+                padding-right: 12px;
+            }
+            
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid rgba(66, 133, 244, 0.8);
+                margin-right: 5px;
+            }
+            
+            QComboBox QAbstractItemView {
+                background: rgba(255, 255, 255, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.9);
+                border-radius: 8px;
+                selection-background-color: rgba(66, 133, 244, 0.2);
+                padding: 5px;
+            }
+            
+            QSpinBox, QDoubleSpinBox {
+                background: rgba(255, 255, 255, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.9);
+                border-radius: 10px;
+                padding: 10px;
+                font-size: 13px;
+                color: #424242;
+            }
+            
+            QSpinBox:focus, QDoubleSpinBox:focus {
+                border: 1px solid rgba(66, 133, 244, 0.5);
+                background: rgba(255, 255, 255, 0.9);
+            }
+            
+            QLabel {
+                color: #424242;
+                font-size: 13px;
+                font-weight: 500;
+            }
+            
+            QProgressBar {
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 12px;
+                text-align: center;
+                background: rgba(255, 255, 255, 0.6);
+                height: 28px;
+                color: #424242;
+                font-weight: 600;
+            }
+            
+            QProgressBar::chunk {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(66, 133, 244, 0.9), stop:0.5 rgba(52, 168, 83, 0.9), 
+                    stop:1 rgba(251, 188, 5, 0.9));
+                border-radius: 10px;
+            }
+            
+            QStatusBar {
+                background: rgba(255, 255, 255, 0.7);
+                color: #424242;
+                font-weight: 600;
+            }
         """)
         
         # Crear tabs
@@ -544,10 +839,30 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.sync_tab, "🔄 Sincronización")
         self.tabs.addTab(self.demo_tab, "🎬 Demo")
         
+        # Agregar efecto de sombra a las tabs
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(30)
+        shadow.setColor(QColor(0, 0, 0, 40))
+        shadow.setOffset(0, 8)
+        self.tabs.setGraphicsEffect(shadow)
+        
         self.setCentralWidget(self.tabs)
         
-        # Barra de estado
-        self.statusBar().showMessage("✅ Listo")
+        # Barra de estado con animación
+        self.statusBar().showMessage("✅ Sistema inicializado correctamente")
+        
+        # Animación de entrada
+        self.animate_window_entrance()
+    
+    def animate_window_entrance(self):
+        """Animación suave de entrada de ventana"""
+        self.setWindowOpacity(0)
+        self.animation = QPropertyAnimation(self, b"windowOpacity")
+        self.animation.setDuration(600)
+        self.animation.setStartValue(0)
+        self.animation.setEndValue(1)
+        self.animation.setEasingCurve(QEasingCurve.OutCubic)
+        self.animation.start()
 
 
 def main():
